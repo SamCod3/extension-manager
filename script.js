@@ -216,5 +216,28 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    const exportPolicyBtn = document.getElementById('exportPolicyBtn');
+    exportPolicyBtn.addEventListener('click', async () => {
+        if (selectedIds.size === 0) {
+            alert('Por favor selecciona al menos una extensión para exportar.');
+            return;
+        }
+
+        const selectedExtensions = extensions.filter(ext => selectedIds.has(ext.id));
+
+        // Ask for mode
+        const allowUninstall = confirm(
+            "¿Quieres permitir que el usuario pueda desinstalar estas extensiones?\n\n" +
+            "ACEPTAR = Sí, modo 'Recomendado' (Se instalan pero se pueden borrar).\n" +
+            "CANCELAR = No, modo 'Forzado' (No se pueden borrar)."
+        );
+
+        try {
+            window.ExtensionExporter.exportPolicy(selectedExtensions, allowUninstall);
+        } catch (err) {
+            alert(err.message);
+        }
+    });
+
     // Old helpers removed (getBase64Image, generateAndDownloadHtml) - now in modules
 });

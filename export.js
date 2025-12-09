@@ -113,5 +113,58 @@ window.ExtensionExporter = {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-    }
-};
+        /**
+         * Generates JSON Policy file and triggers download
+         * @param {Array} items - List of extension objects
+         * @param {boolean} allowUninstall - If true, uses ExtensionSettings (Recommended). If false, uses ExtensionInstallForcelist (Forced).
+         */
+        exportPolicy: (items, allowUninstall) => {
+            // Filter: Only enabled extensions from WebStore (no local)
+            const validItems = items.filter(ext => ext.enabled && ext.installType !== 'development');
+
+            if (validItems.length === 0) {
+                throw new Error('No hay extensiones válidas para exportar a políticas (deben estar habilitadas y ser de la Web Store).');
+            }
+
+            const timestamp = new Date().toISOString().split('T')[0];
+            let policyData = {};
+
+            // Instructions
+            const instructions = {
+                "LINUX": "Copiar este archivo a /etc/opt/chrome/policies/managed/ (Chrome) o /etc/brave/policies/managed/ (Brave). El nombre del archivo debe terminar en .json",
+                "MACOS": "El soporte nativo de JSON es limitado. Se recomienda usar MDM o convertir esto a un perfil .mobileconfig. Ruta alternativa (inestable): /Library/Application Support/Google/Chrome/External Extensions/",
+                "WINDOWS": "Windows no carga JSONs locales automáticamente en versiones no-Enterprise. Usar estas claves de Registro (HKLM\\SOFTWARE\\Policies\\Google\\Chrome\\...):"
+            };
+
+            policyData["_INSTRUCCIONES"] = instructions;
+
+            if (allowUninstall) {
+                // RECOMMENDED MODE (ExtensionSettings -> normal_installed)
+                // Windows Registry equivalent: HKLM\SOFTWARE\Policies\Google\Chrome\ExtensionSettings
+                policyData["ExtensionSettings"] = {};
+                validItems.forEach(ext => {
+                    policyData["ExtensionSettings"][ext.id] = {
+                        "installation_mode": "normal_installed",
+                        "update_url": "https://clients2.google.com/service/update2/crx"
+                    };
+                });
+            } else {
+                // FORCED MODE (ExtensionInstallForcelist)
+                // Windows Registry equivalent: HKLM\SOFTWARE\Policies\Google\Chrome\ExtensionInstallForcelist
+                const forceList = validItems.map(ext => `${ext.id};https://clients2.google.com/service/update2/crx`);
+                policyData["ExtensionInstallForcelist"] = forceList;
+            }
+
+            const jsonContent = JSON.stringify(policyData, null, 4);
+            const blob = new Blob([jsonContent], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const modeLabel = allowUninstall ? 'recommended' : 'forced';
+            a.download = `extensions-policy-${modeLabel}-${timestamp}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    };
