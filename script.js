@@ -89,40 +89,30 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderExtensions() {
         listContainer.innerHTML = '';
 
-        // Groups
-        const localExts = extensions.filter(e => e.installType === 'development');
-        // Filter out local ones from enabled/disabled to avoid duplicates if they overlap (though installType is mutually exclusive with 'normal' usually, 'enabled' checks state)
-        // Actually, local extensions can be enabled or disabled too.
-        // User wants "Group UI by Local / Enabled / Disabled". 
-        // Logic: If Local -> go to Local group (regardless of enabled state, or maybe show state inside).
-        // If Not Local AND Enabled -> Enabled group.
-        // If Not Local AND Disabled -> Disabled group.
+        // Use shared grouping logic from utils.js
+        const groups = window.ExtensionUtils.groupExtensions(extensions);
 
-        const normalExts = extensions.filter(e => e.installType !== 'development');
-        const enabledExts = normalExts.filter(e => e.enabled);
-        const disabledExts = normalExts.filter(e => !e.enabled);
-
-        if (localExts.length > 0) {
+        if (groups.local.length > 0) {
             const h2 = document.createElement('h2');
-            h2.textContent = `🛠️ Desarrollo / Local (${localExts.length})`;
-            h2.style.color = '#fbbf24'; // Warning color
+            h2.textContent = `🛠️ Desarrollo / Local (${groups.local.length})`;
+            h2.style.color = '#fbbf24';
             h2.style.borderColor = 'rgba(251, 191, 36, 0.3)';
             listContainer.appendChild(h2);
-            localExts.forEach(ext => listContainer.appendChild(createCard(ext)));
+            groups.local.forEach(ext => listContainer.appendChild(createCard(ext)));
         }
 
-        if (enabledExts.length > 0) {
+        if (groups.enabled.length > 0) {
             const h2 = document.createElement('h2');
-            h2.textContent = `✅ Habilitadas (${enabledExts.length})`;
+            h2.textContent = `✅ Habilitadas (${groups.enabled.length})`;
             listContainer.appendChild(h2);
-            enabledExts.forEach(ext => listContainer.appendChild(createCard(ext)));
+            groups.enabled.forEach(ext => listContainer.appendChild(createCard(ext)));
         }
 
-        if (disabledExts.length > 0) {
+        if (groups.disabled.length > 0) {
             const h2 = document.createElement('h2');
-            h2.textContent = `❌ Deshabilitadas (${disabledExts.length})`;
+            h2.textContent = `❌ Deshabilitadas (${groups.disabled.length})`;
             listContainer.appendChild(h2);
-            disabledExts.forEach(ext => listContainer.appendChild(createCard(ext)));
+            groups.disabled.forEach(ext => listContainer.appendChild(createCard(ext)));
         }
     }
 
@@ -215,7 +205,8 @@ document.addEventListener('DOMContentLoaded', () => {
         exportBtn.disabled = true;
 
         try {
-            await generateAndDownloadHtml(selectedExtensions);
+            // Use new Export Module
+            await window.ExtensionExporter.exportExtensions(selectedExtensions);
         } catch (err) {
             console.error(err);
             alert('Error exportando: ' + err.message);
@@ -225,126 +216,5 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Helper to convert image URL to Base64
-    function getBase64Image(url) {
-        return new Promise((resolve, reject) => {
-            const img = new Image();
-            img.crossOrigin = 'Anonymous';
-            img.src = url;
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                canvas.width = img.width;
-                canvas.height = img.height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0);
-                try {
-                    const dataURL = canvas.toDataURL('image/png');
-                    resolve(dataURL);
-                } catch (e) {
-                    // Fallback for tainted canvas or other issues
-                    console.warn('Could not convert image to base64', url, e);
-                    resolve(null);
-                }
-            };
-            img.onerror = () => {
-                console.warn('Could not load image for base64', url);
-                resolve(null);
-            };
-        });
-    }
-
-    async function generateAndDownloadHtml(items) {
-        // Pre-process items to get base64 icons
-        const processedItems = await Promise.all(items.map(async (ext) => {
-            let iconUrl = ext.icons ? ext.icons[ext.icons.length - 1].url : '';
-            let base64Icon = null;
-            if (iconUrl) {
-                base64Icon = await getBase64Image(iconUrl);
-            }
-            return { ...ext, base64Icon };
-        }));
-
-        const localItems = processedItems.filter(i => i.installType === 'development');
-        const normalItems = processedItems.filter(i => i.installType !== 'development');
-        const enabledItems = normalItems.filter(i => i.enabled);
-        const disabledItems = normalItems.filter(i => !i.enabled);
-
-        const timestamp = new Date().toISOString().split('T')[0];
-
-        const renderList = (list, title) => {
-            if (list.length === 0) return '';
-            return `
-                <h2 class="section-title">${title} (${list.length})</h2>
-                <div class="list">
-                    ${list.map(ext => {
-                const isLocal = ext.installType === 'development';
-                const storeUrl = isLocal ? '#' : `https://chrome.google.com/webstore/detail/${ext.id}`;
-                const targetAttr = isLocal ? '' : 'target="_blank"';
-                const linkClass = isLocal ? 'item local' : 'item';
-                const imgSrc = ext.base64Icon || 'https://www.google.com/s2/favicons?domain=chrome.google.com';
-
-                return `
-                        <a href="${storeUrl}" ${targetAttr} class="${linkClass}">
-                            <img src="${imgSrc}" class="icon" alt="Icon">
-                            <div class="details">
-                                <span class="name">
-                                    ${ext.name}
-                                </span>
-                                <span class="desc">${ext.description || ''}</span>
-                                <div class="meta">
-                                    <span style="background:#eee;padding:2px 4px;border-radius:3px;">v${ext.version}</span>
-                                    ID: ${ext.id}
-                                    ${isLocal ? '<br><small style="color:#d97706">⚠️ Requiere instalación manual</small>' : ''}
-                                </div>
-                            </div>
-                        </a>
-                        `;
-            }).join('')}
-                </div>
-            `;
-        };
-
-        const htmlContent = `
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Extensiones Exportadas - ${timestamp}</title>
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; background: #f0f2f5; color: #333; }
-        h1 { text-align: center; color: #1a1a1a; margin-bottom: 30px; }
-        .section-title { color: #4b5563; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; margin-top: 30px; margin-bottom: 20px; }
-        .list { display: grid; gap: 16px; }
-        .item { background: white; padding: 16px; border-radius: 8px; display: flex; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); text-decoration: none; color: inherit; transition: transform 0.2s; }
-        .item:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        .item.local { border-left: 4px solid #fbbf24; cursor: default; }
-        .item.local:hover { transform: none; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .icon { width: 48px; height: 48px; border-radius: 8px; margin-right: 16px; object-fit: contain; background: #f8fafc; }
-        .details { flex: 1; }
-        .name { font-weight: 600; font-size: 1.1em; display: block; margin-bottom: 4px; color: #2563eb; }
-        .item.local .name { color: #1f2937; }
-        .desc { font-size: 0.9em; color: #666; }
-        .meta { font-size: 0.8em; color: #999; margin-top: 4px; }
-    </style>
-</head>
-<body>
-    <h1>Extensiones Exportadas</h1>
-    ${renderList(localItems, 'Desarrollo / Local')}
-    ${renderList(enabledItems, 'Extensiones Habilitadas')}
-    ${renderList(disabledItems, 'Extensiones Deshabilitadas')}
-</body>
-</html>
-        `;
-
-        const blob = new Blob([htmlContent], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `extensions-export-${timestamp}.html`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    }
+    // Old helpers removed (getBase64Image, generateAndDownloadHtml) - now in modules
 });
