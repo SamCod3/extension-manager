@@ -1,0 +1,15 @@
+{
+    "manifest_version": 3,
+    "name": "Extension Export Manager",
+    "version": "1.0",
+    "description": "List installed extensions and export them to an HTML file for easy re-installation.",
+    "permissions": [
+        "management"
+    ],
+    "action": {
+        "default_title": "Manage Extensions"
+    },
+    "background": {
+        "service_worker": "background.js"
+    }
+}
