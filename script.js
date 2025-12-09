@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (!result || result.length === 0) {
-                listContainer.innerHTML = '<div class="info-message">No extensions found.</div>';
+                listContainer.innerHTML = '<div class="info-message">No se encontraron extensiones.</div>';
                 return;
             }
 
@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('Filtered extensions:', extensions);
 
             if (extensions.length === 0) {
-                listContainer.innerHTML = '<div class="info-message">No other extensions installed (or all filtered out).</div>';
+                listContainer.innerHTML = '<div class="info-message">No se encontraron otras extensiones instaladas.</div>';
                 return;
             }
 
@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
             renderExtensions();
         });
     } catch (e) {
-        listContainer.innerHTML = `<div class="error">Unexpected error: ${e.message}</div>`;
+        listContainer.innerHTML = `<div class="error">Error inesperado: ${e.message}</div>`;
         console.error(e);
     }
 
@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const perms = [...(ext.permissions || []), ...(ext.hostPermissions || [])];
 
         if (perms.length === 0) {
-            modalContent.innerHTML = '<span class="info-message" style="padding:0; text-align:left;">No special permissions required.</span>';
+            modalContent.innerHTML = '<span class="info-message" style="padding:0; text-align:left;">No requiere permisos especiales.</span>';
         } else {
             perms.forEach(p => {
                 const tag = document.createElement('span');
@@ -82,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        document.querySelector('.modal-title').textContent = `${ext.name} - Permissions`;
+        document.querySelector('.modal-title').textContent = `${ext.name} - Permisos`;
         modal.classList.add('active');
     }
 
@@ -104,7 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (localExts.length > 0) {
             const h2 = document.createElement('h2');
-            h2.textContent = `🛠️ Development / Local (${localExts.length})`;
+            h2.textContent = `🛠️ Desarrollo / Local (${localExts.length})`;
             h2.style.color = '#fbbf24'; // Warning color
             h2.style.borderColor = 'rgba(251, 191, 36, 0.3)';
             listContainer.appendChild(h2);
@@ -113,14 +113,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (enabledExts.length > 0) {
             const h2 = document.createElement('h2');
-            h2.textContent = `✅ Enabled (${enabledExts.length})`;
+            h2.textContent = `✅ Habilitadas (${enabledExts.length})`;
             listContainer.appendChild(h2);
             enabledExts.forEach(ext => listContainer.appendChild(createCard(ext)));
         }
 
         if (disabledExts.length > 0) {
             const h2 = document.createElement('h2');
-            h2.textContent = `❌ Disabled (${disabledExts.length})`;
+            h2.textContent = `❌ Deshabilitadas (${disabledExts.length})`;
             listContainer.appendChild(h2);
             disabledExts.forEach(ext => listContainer.appendChild(createCard(ext)));
         }
@@ -133,28 +133,26 @@ document.addEventListener('DOMContentLoaded', () => {
         card.dataset.id = ext.id;
 
         const iconUrl = ext.icons ? ext.icons[ext.icons.length - 1].url : 'icon.png';
-        const isLocal = ext.installType === 'development';
 
         card.innerHTML = `
             <div class="icon-container">
                 <div class="icon-wrapper">
                     <img src="${iconUrl}" alt="${ext.name}">
                 </div>
-                ${isLocal ? '<span class="badge local">LOCAL</span>' : ''}
             </div>
             
             <div class="header-group">
                 <div class="name" title="${ext.name}">${ext.name}</div>
             </div>
 
-            <div class="description" title="${ext.description}">${ext.description || 'No description provided'}</div>
+            <div class="description" title="${ext.description}">${ext.description || 'Sin descripción'}</div>
 
             <div class="meta-row">
-                <span class="version" title="Version">v${ext.version || '0.0'}</span>
+                <span class="version" title="Versión">v${ext.version || '0.0'}</span>
             </div>
 
             <div class="card-actions">
-                <button class="btn-icon info-btn" title="View Permissions">ℹ️</button>
+                <button class="btn-icon info-btn" title="Ver Permisos">ℹ️</button>
             </div>
         `;
 
@@ -205,7 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     exportBtn.addEventListener('click', async () => {
         if (selectedIds.size === 0) {
-            alert('Please select at least one extension to export.');
+            alert('Por favor selecciona al menos una extensión para exportar.');
             return;
         }
 
@@ -213,14 +211,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Change button state
         const originalText = exportBtn.innerHTML;
-        exportBtn.innerHTML = 'Processing...';
+        exportBtn.innerHTML = 'Procesando...';
         exportBtn.disabled = true;
 
         try {
             await generateAndDownloadHtml(selectedExtensions);
         } catch (err) {
             console.error(err);
-            alert('Error exporting: ' + err.message);
+            alert('Error exportando: ' + err.message);
         } finally {
             exportBtn.innerHTML = originalText;
             exportBtn.disabled = false;
@@ -266,8 +264,10 @@ document.addEventListener('DOMContentLoaded', () => {
             return { ...ext, base64Icon };
         }));
 
-        const enabledItems = processedItems.filter(i => i.enabled);
-        const disabledItems = processedItems.filter(i => !i.enabled);
+        const localItems = processedItems.filter(i => i.installType === 'development');
+        const normalItems = processedItems.filter(i => i.installType !== 'development');
+        const enabledItems = normalItems.filter(i => i.enabled);
+        const disabledItems = normalItems.filter(i => !i.enabled);
 
         const timestamp = new Date().toISOString().split('T')[0];
 
@@ -289,13 +289,12 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div class="details">
                                 <span class="name">
                                     ${ext.name}
-                                    ${isLocal ? '<span class="badge" style="background:#fbbf24;color:#92400e;font-size:0.7em;padding:2px 6px;border-radius:4px;margin-left:8px;">LOCAL</span>' : ''}
                                 </span>
                                 <span class="desc">${ext.description || ''}</span>
                                 <div class="meta">
                                     <span style="background:#eee;padding:2px 4px;border-radius:3px;">v${ext.version}</span>
                                     ID: ${ext.id}
-                                    ${isLocal ? '<br><small style="color:#d97706">⚠️ Manual installation required</small>' : ''}
+                                    ${isLocal ? '<br><small style="color:#d97706">⚠️ Requiere instalación manual</small>' : ''}
                                 </div>
                             </div>
                         </a>
@@ -307,11 +306,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const htmlContent = `
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Exported Extensions - ${timestamp}</title>
+    <title>Extensiones Exportadas - ${timestamp}</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; background: #f0f2f5; color: #333; }
         h1 { text-align: center; color: #1a1a1a; margin-bottom: 30px; }
@@ -330,9 +329,10 @@ document.addEventListener('DOMContentLoaded', () => {
     </style>
 </head>
 <body>
-    <h1>Exported Extensions</h1>
-    ${renderList(enabledItems, 'Enabled Extensions')}
-    ${renderList(disabledItems, 'Disabled Extensions')}
+    <h1>Extensiones Exportadas</h1>
+    ${renderList(localItems, 'Desarrollo / Local')}
+    ${renderList(enabledItems, 'Extensiones Habilitadas')}
+    ${renderList(disabledItems, 'Extensiones Deshabilitadas')}
 </body>
 </html>
         `;

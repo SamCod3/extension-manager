@@ -1,34 +1,34 @@
-# Extension Export Manager
+# Gestor de Extensiones
 
-A beautiful and powerful browser extension to manage and export your installed extensions.
+Una extensión hermosa y potente para administrar y exportar tus extensiones instaladas.
 
-## Features
+## Características
 
-- **📊 Dashboard View**: View all your extensions in a clean, card-based layout.
-- **📂 Grouping**: Automatically groups extensions by:
-    - 🛠️ **Local / Development**: Extensions loaded from disk.
-    - ✅ **Enabled**: Active extensions.
-    - ❌ **Disabled**: Inactive extensions.
-- **ℹ️ Metadata**: See version numbers and local installation badges.
-- **🔒 Permission Audit**: Click the `i` button on any card to see exactly what permissions an extension has.
-- **💾 Smart Export**: Export your list to a self-contained HTML file.
-    - Icons are embedded (Base64) so they work offline.
-    - Local extensions are marked and safe from broken store links.
+- **📊 Panel de Control**: Visualiza todas tus extensiones en un diseño limpio basado en tarjetas.
+- **📂 Agrupación Inteligente**: Clasifica automáticamente tus extensiones en:
+    - 🛠️ **Desarrollo / Local**: Extensiones cargadas manualmente desde el disco.
+    - ✅ **Habilitadas**: Extensiones activas.
+    - ❌ **Deshabilitadas**: Extensiones inactivas.
+- **ℹ️ Metadatos Claros**: Muestra números de versión y etiquetas para instalaciones locales.
+- **🔒 Auditoría de Permisos**: Haz clic en el botón `i` de cualquier tarjeta para ver exactamente qué permisos solicita.
+- **💾 Exportación Inteligente**: Genera un archivo HTML portátil con tu lista.
+    - Los iconos se incrustan (Base64) para que se vean siempre, incluso sin internet.
+    - Las extensiones locales se marcan claramente y no generan enlaces rotos a la tienda.
 
-## Installation
+## Instalación
 
-1. Clone this repository.
-2. Open your browser and go to `chrome://extensions` (or `brave://extensions`).
-3. Enable **Developer mode** in the top right.
-4. Click **Load unpacked**.
-5. Select the folder where you cloned this repository.
+1. Clona este repositorio.
+2. Abre tu navegador y ve a `chrome://extensions` (o `brave://extensions`).
+3. Activa el **Modo de desarrollador** en la esquina superior derecha.
+4. Haz clic en **Cargar descomprimida**.
+5. Selecciona la carpeta donde clonaste este repositorio.
 
-## Usage
+## Uso
 
-1. Click the extension icon in your toolbar.
-2. Use the **Select All**, **Deselect All**, or click individual cards to select extensions.
-3. Click **Export Selection** to generate an HTML file with your list.
+1. Haz clic en el icono de la extensión en tu barra de herramientas.
+2. Usa los botones **Seleccionar Todo**, **Deseleccionar Todo** o haz clic en tarjetas individuales.
+3. Haz clic en **Exportar Selección** para descargar un archivo HTML con tu lista.
 
-## License
+## Licencia
 
 MIT
