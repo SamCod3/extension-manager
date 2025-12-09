@@ -130,67 +130,94 @@ window.ExtensionExporter = {
         }
 
         const timestamp = new Date().toISOString().split('T')[0];
-        let content = '';
-        let filename = '';
-        let mimeType = '';
+        let result = null;
 
-        // --- WINDOWS (.reg) ---
-        if (os === 'WINDOWS') {
-            filename = `extensions-policy-${browser.toLowerCase()}-${timestamp}.reg`;
-            mimeType = 'application/x-registry-script'; // or text/plain
-
-            // Define Registry Key Base
-            let keyPath = '';
-            if (browser === 'CHROME') keyPath = 'Software\\Policies\\Google\\Chrome';
-            else if (browser === 'BRAVE') keyPath = 'Software\\Policies\\BraveSoftware\\Brave';
-            else if (browser === 'EDGE') keyPath = 'Software\\Policies\\Microsoft\\Edge';
-
-            content = 'Windows Registry Editor Version 5.00\n\n';
-
-            if (allowUninstall) {
-                // Recommended: ExtensionSettings
-                const settingsKey = `HKEY_LOCAL_MACHINE\\${keyPath}\\ExtensionSettings`;
-                content += `[${settingsKey}]\n\n`;
-
-                validItems.forEach(ext => {
-                    // Escape quotes for Reg file
-                    const updateUrl = "https://clients2.google.com/service/update2/crx";
-                    content += `[${settingsKey}\\${ext.id}]\n`;
-                    content += `"installation_mode"="normal_installed"\n`;
-                    content += `"update_url"="${updateUrl}"\n\n`;
-                });
-            } else {
-                // Forced: ExtensionInstallForcelist
-                const forceKey = `HKEY_LOCAL_MACHINE\\${keyPath}\\ExtensionInstallForcelist`;
-                content += `[${forceKey}]\n`;
-                validItems.forEach((ext, index) => {
-                    const val = `${ext.id};https://clients2.google.com/service/update2/crx`;
-                    content += `"${index + 1}"="${val}"\n`;
-                });
-            }
+        // Dispatch to specific generator
+        switch (os) {
+            case 'WINDOWS':
+                result = window.ExtensionExporter._generateWindowsPolicy(validItems, browser, allowUninstall, timestamp);
+                break;
+            case 'MACOS':
+                result = window.ExtensionExporter._generateMacOSPolicy(validItems, browser, allowUninstall, timestamp);
+                break;
+            case 'LINUX':
+                result = window.ExtensionExporter._generateLinuxPolicy(validItems, browser, allowUninstall, timestamp);
+                break;
+            default:
+                throw new Error('Sistema Operativo no soportado');
         }
 
-        // --- macOS (.mobileconfig) ---
-        else if (os === 'MACOS') {
-            filename = `extensions-policy-${browser.toLowerCase()}-${timestamp}.mobileconfig`;
-            mimeType = 'application/x-apple-aspen-config';
+        // Trigger Download
+        if (result) {
+            const blob = new Blob([result.content], { type: result.mimeType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = result.filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    },
 
-            // Define Payload Identifier
-            let payloadId = '';
-            if (browser === 'CHROME') payloadId = 'com.google.Chrome';
-            else if (browser === 'BRAVE') payloadId = 'com.brave.Browser';
-            else if (browser === 'EDGE') payloadId = 'com.microsoft.Edge';
+    // --- Internal Helpers ---
 
-            const uuid = '50608b0a-0000-4000-8000-' + Date.now().toString(16).padEnd(12, '0'); // Simple UUID-like
+    _generateWindowsPolicy: (items, browser, allowUninstall, timestamp) => {
+        const filename = `extensions-policy-${browser.toLowerCase()}-${timestamp}.reg`;
+        const mimeType = 'application/x-registry-script';
 
-            let dictContent = '';
-            if (allowUninstall) {
-                // ExtensionSettings
-                dictContent += `
+        // Define Registry Key Base
+        let keyPath = '';
+        if (browser === 'CHROME') keyPath = 'Software\\Policies\\Google\\Chrome';
+        else if (browser === 'BRAVE') keyPath = 'Software\\Policies\\BraveSoftware\\Brave';
+        else if (browser === 'EDGE') keyPath = 'Software\\Policies\\Microsoft\\Edge';
+
+        let content = 'Windows Registry Editor Version 5.00\n\n';
+
+        if (allowUninstall) {
+            // Recommended: ExtensionSettings
+            const settingsKey = `HKEY_LOCAL_MACHINE\\${keyPath}\\ExtensionSettings`;
+            content += `[${settingsKey}]\n\n`;
+
+            items.forEach(ext => {
+                const updateUrl = "https://clients2.google.com/service/update2/crx";
+                content += `[${settingsKey}\\${ext.id}]\n`;
+                content += `"installation_mode"="normal_installed"\n`;
+                content += `"update_url"="${updateUrl}"\n\n`;
+            });
+        } else {
+            // Forced: ExtensionInstallForcelist
+            const forceKey = `HKEY_LOCAL_MACHINE\\${keyPath}\\ExtensionInstallForcelist`;
+            content += `[${forceKey}]\n`;
+            items.forEach((ext, index) => {
+                const val = `${ext.id};https://clients2.google.com/service/update2/crx`;
+                content += `"${index + 1}"="${val}"\n`;
+            });
+        }
+        return { filename, content, mimeType };
+    },
+
+    _generateMacOSPolicy: (items, browser, allowUninstall, timestamp) => {
+        const filename = `extensions-policy-${browser.toLowerCase()}-${timestamp}.mobileconfig`;
+        const mimeType = 'application/x-apple-aspen-config';
+
+        // Define Payload Identifier
+        let payloadId = '';
+        if (browser === 'CHROME') payloadId = 'com.google.Chrome';
+        else if (browser === 'BRAVE') payloadId = 'com.brave.Browser';
+        else if (browser === 'EDGE') payloadId = 'com.microsoft.Edge';
+
+        const uuid = '50608b0a-0000-4000-8000-' + Date.now().toString(16).padEnd(12, '0');
+
+        let dictContent = '';
+        if (allowUninstall) {
+            // ExtensionSettings
+            dictContent += `
             <key>ExtensionSettings</key>
             <dict>`;
-                validItems.forEach(ext => {
-                    dictContent += `
+            items.forEach(ext => {
+                dictContent += `
                 <key>${ext.id}</key>
                 <dict>
                     <key>installation_mode</key>
@@ -198,23 +225,23 @@ window.ExtensionExporter = {
                     <key>update_url</key>
                     <string>https://clients2.google.com/service/update2/crx</string>
                 </dict>`;
-                });
-                dictContent += `
+            });
+            dictContent += `
             </dict>`;
-            } else {
-                // ExtensionInstallForcelist
-                dictContent += `
+        } else {
+            // ExtensionInstallForcelist
+            dictContent += `
             <key>ExtensionInstallForcelist</key>
             <array>`;
-                validItems.forEach(ext => {
-                    dictContent += `
-                <string>${ext.id};https://clients2.google.com/service/update2/crx</string>`;
-                });
+            items.forEach(ext => {
                 dictContent += `
+                <string>${ext.id};https://clients2.google.com/service/update2/crx</string>`;
+            });
+            dictContent += `
             </array>`;
-            }
+        }
 
-            content = `<?xml version="1.0" encoding="UTF-8"?>
+        const content = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
@@ -246,43 +273,33 @@ window.ExtensionExporter = {
     <integer>1</integer>
 </dict>
 </plist>`;
+        return { filename, content, mimeType };
+    },
+
+    _generateLinuxPolicy: (items, browser, allowUninstall, timestamp) => {
+        const filename = `extensions-policy-${browser.toLowerCase()}-${timestamp}.json`;
+        const mimeType = 'application/json';
+
+        let policyData = {};
+        let path = '/etc/opt/chrome/policies/managed/';
+        if (browser === 'BRAVE') path = '/etc/brave/policies/managed/';
+        else if (browser === 'EDGE') path = '/etc/opt/edge/policies/managed/';
+
+        policyData["_INSTRUCCIONES"] = `Copiar a: ${path}`;
+
+        if (allowUninstall) {
+            policyData["ExtensionSettings"] = {};
+            items.forEach(ext => {
+                policyData["ExtensionSettings"][ext.id] = {
+                    "installation_mode": "normal_installed",
+                    "update_url": "https://clients2.google.com/service/update2/crx"
+                };
+            });
+        } else {
+            policyData["ExtensionInstallForcelist"] = items.map(ext => `${ext.id};https://clients2.google.com/service/update2/crx`);
         }
 
-        // --- LINUX (.json) ---
-        else {
-            filename = `extensions-policy-${browser.toLowerCase()}-${timestamp}.json`;
-            mimeType = 'application/json';
-
-            let policyData = {};
-            // Instructions comment key
-            let path = '/etc/opt/chrome/policies/managed/';
-            if (browser === 'BRAVE') path = '/etc/brave/policies/managed/';
-            else if (browser === 'EDGE') path = '/etc/opt/edge/policies/managed/';
-
-            policyData["_INSTRUCCIONES"] = `Copiar a: ${path}`;
-
-            if (allowUninstall) {
-                policyData["ExtensionSettings"] = {};
-                validItems.forEach(ext => {
-                    policyData["ExtensionSettings"][ext.id] = {
-                        "installation_mode": "normal_installed",
-                        "update_url": "https://clients2.google.com/service/update2/crx"
-                    };
-                });
-            } else {
-                policyData["ExtensionInstallForcelist"] = validItems.map(ext => `${ext.id};https://clients2.google.com/service/update2/crx`);
-            }
-            content = JSON.stringify(policyData, null, 4);
-        }
-
-        const blob = new Blob([content], { type: mimeType });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        const content = JSON.stringify(policyData, null, 4);
+        return { filename, content, mimeType };
     }
 };
