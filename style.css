@@ -227,28 +227,36 @@ h2 {
 }
 
 .btn.secondary {
-    background-color: transparent;
+    background-color: rgba(255, 255, 255, 0.1);
     border: 1px solid var(--border-color);
-    color: var(--text-secondary);
+    color: var(--text-primary);
 }
 
 .btn.secondary:hover {
+    background-color: rgba(255, 255, 255, 0.15);
     border-color: var(--text-primary);
-    color: var(--text-primary);
-    background-color: rgba(255, 255, 255, 0.05);
 }
 
-.floating-action {
+.action-bar {
     position: fixed;
-    bottom: 2rem;
-    right: 2rem;
-    z-index: 10;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(10px);
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    border-top: 1px solid var(--border-color);
+    z-index: 100;
+    box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
-.floating-action .btn {
-    padding: 1rem 2rem;
-    font-size: 1.1rem;
-    border-radius: 50px;
+.action-bar .btn {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -387,4 +395,51 @@ h2 {
     border-radius: 99px;
     font-size: 0.875rem;
     border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+/* Form Styles */
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.form-control {
+    width: 100%;
+    padding: 0.75rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: #0f172a;
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--accent-color);
+}
+
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+}
+
+.checkbox-group label {
+    margin-bottom: 0;
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+.checkbox-group input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent-color);
+    cursor: pointer;
 }

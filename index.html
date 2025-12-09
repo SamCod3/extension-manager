@@ -25,26 +25,60 @@
             <!-- Extensions will be injected here -->
         </main>
 
-        <div class="floating-action">
+        <div class="action-bar">
+            <button id="exportPolicyBtn" class="btn secondary">
+                <span class="icon">🛡️</span> Políticas
+            </button>
             <button id="exportBtn" class="btn primary">
                 <span class="icon">⬇</span> Exportar Selección
-            </button>
-            <button id="exportPolicyBtn" class="btn secondary"
-                style="margin-top: 10px; width: 100%; justify-content: center;">
-                <span class="icon">🛡️</span> Exportar Políticas (JSON)
             </button>
         </div>
     </div>
 
-    <!-- Modal -->
+    <!-- Modal Permissions -->
     <div id="permissionsModal" class="modal-overlay">
         <div class="modal">
             <div class="modal-header">
                 <h3 class="modal-title">Permisos</h3>
-                <button class="modal-close">×</button>
+                <button class="modal-close p-close">×</button>
             </div>
             <div id="modalContent" class="permission-list">
                 <!-- Permissions injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Export Options -->
+    <div id="exportOptionsModal" class="modal-overlay">
+        <div class="modal" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Opciones de Exportación</h3>
+                <button class="modal-close e-close">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="osSelect">Sistema Operativo</label>
+                    <select id="osSelect" class="form-control">
+                        <option value="WINDOWS">Windows (.reg)</option>
+                        <option value="MACOS">macOS (.mobileconfig)</option>
+                        <option value="LINUX">Linux (.json)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="browserSelect">Navegador</label>
+                    <select id="browserSelect" class="form-control">
+                        <option value="CHROME">Google Chrome</option>
+                        <option value="BRAVE">Brave Browser</option>
+                        <option value="EDGE">Microsoft Edge</option>
+                    </select>
+                </div>
+                <div class="form-group checkbox-group">
+                    <input type="checkbox" id="allowUninstallCheck">
+                    <label for="allowUninstallCheck">Permitir desinstalación (Recomendado)</label>
+                </div>
+                <div class="form-actions" style="margin-top: 20px; display: flex; justify-content: flex-end;">
+                    <button id="confirmExportBtn" class="btn primary">Descargar</button>
+                </div>
             </div>
         </div>
     </div>

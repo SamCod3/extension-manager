@@ -217,23 +217,46 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const exportPolicyBtn = document.getElementById('exportPolicyBtn');
-    exportPolicyBtn.addEventListener('click', async () => {
+    const exportModal = document.getElementById('exportOptionsModal');
+    const confirmExportBtn = document.getElementById('confirmExportBtn');
+    const modalCloseBtn = document.querySelector('.e-close');
+
+    // Open Modal
+    exportPolicyBtn.addEventListener('click', () => {
         if (selectedIds.size === 0) {
             alert('Por favor selecciona al menos una extensión para exportar.');
             return;
         }
+        exportModal.classList.add('active');
+    });
+
+    // Close Modal
+    modalCloseBtn.addEventListener('click', () => {
+        exportModal.classList.remove('active');
+    });
+
+    // Close on outside click
+    exportModal.addEventListener('click', (e) => {
+        if (e.target === exportModal) {
+            exportModal.classList.remove('active');
+        }
+    });
+
+    // Handle Export Confirmation
+    confirmExportBtn.addEventListener('click', () => {
+        const os = document.getElementById('osSelect').value;
+        const browser = document.getElementById('browserSelect').value;
+        const allowUninstall = document.getElementById('allowUninstallCheck').checked;
 
         const selectedExtensions = extensions.filter(ext => selectedIds.has(ext.id));
 
-        // Ask for mode
-        const allowUninstall = confirm(
-            "¿Quieres permitir que el usuario pueda desinstalar estas extensiones?\n\n" +
-            "ACEPTAR = Sí, modo 'Recomendado' (Se instalan pero se pueden borrar).\n" +
-            "CANCELAR = No, modo 'Forzado' (No se pueden borrar)."
-        );
-
         try {
-            window.ExtensionExporter.exportPolicy(selectedExtensions, allowUninstall);
+            window.ExtensionExporter.exportPolicy(selectedExtensions, {
+                os,
+                browser,
+                allowUninstall
+            });
+            exportModal.classList.remove('active');
         } catch (err) {
             alert(err.message);
         }
